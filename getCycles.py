@@ -114,7 +114,7 @@ def sparseOld(matrix, rho):
     randMat = np.random.rand(N,N)
     for x in range(N):
         for y in range(x):
-            if randMat[x, y] > rho:
+            if randMat[x, y] < rho:
                 matrix[x, y] = 0
                 matrix[y, x] = 0
     print(np.sum(matrix!=0)/(n*(n-1)))
@@ -123,7 +123,7 @@ def sparseOld(matrix, rho):
 
 def sparse(matrix, rho):
     N = matrix.shape[0]
-    mask = (np.random.rand(N,N) > rho)
+    mask = (np.random.rand(N,N) < rho)
     mask = symmetrize(mask)
     matrix[mask] = 0
 
