@@ -11,7 +11,7 @@
 #include <array>
 #include <ctime>
 #include <map>
-#include <unordered_map>
+//#include <unordered_map>
 #include <algorithm>
 #include <iterator>
 #include <fstream>
@@ -170,17 +170,17 @@ int codif_vect(const vector<int> &vec) {
 }
 
 // # Ottengo il valore hash di un mstato, ottenuto dalla lista degli stati
-vector<int> mstato_da_n(const vector<int> &s10, int m) {
-    int l = s10.size();
-
-    if (l < m){
-        vector<int> s(m-l, 0);
-        s.insert(s.end(), s10.cbegin(), s10.cend());
-        return s;
-    }
-
-    return (vector<int>(s10.cend() - m, s10.cend()));
-}
+//vector<int> mstato_da_n(const vector<int> &s10, int m) {
+//    int l = s10.size();
+//
+//    if (l < m){
+//        vector<int> s(m-l, 0);
+//        s.insert(s.end(), s10.cbegin(), s10.cend());
+//        return s;
+//    }
+//
+//    return (vector<int>(s10.cend() - m, s10.cend()));
+//}
 
 // # Calcolo della media da una mappa
 double mean_dic(const map<int, unsigned long long int> &a) {
@@ -234,22 +234,7 @@ double std_dic(const unordered_map<int, unsigned long long int> &a) {
     return sqrt(dotsq - (dot * dot));
 }
 
-template <typename T>
-class VectHash {
-    public:
-    long int operator()(const vector<T> &vec) const {
-      long int orig_index = 0;
-      for (unsigned int l = 0; l < vec.size(); ++l) {
-          const unsigned char *buf = reinterpret_cast<const unsigned char*>(&vec[l]);            // Interpreto i byte in memoria dell'elemento l del vettore come array di unsigned char
-          for (unsigned int i = 0; i < sizeof(T); i++, buf++) {                          // Seguo lalgoritmo di Donald Knutt
-            orig_index += (orig_index ^ (orig_index >> 1)) + HASH_MULT * (*buf);
-            while (orig_index >= HASH_PRIME) orig_index -= HASH_PRIME;
-          }
-          //index = orig_index % capacity;
-      }
-      return orig_index;
-    }
-};
+
 
 //void ciclo_singola_matrice(double eps, double dil, int m, int refr, double thresh, const vector<double> &f_k, mappa *isto_dist, mappa *isto_dmax, mappa *isto_lung, mappa *isto_size, mappa *isto_nclu, mappa *isto_nvic, int ripetiz = 1);
 //mutex mtx;
@@ -378,63 +363,50 @@ void ciclo_singola_matrice(double eps,
 	      
 
         int icluster = 0;                                       // Contatore dei cluster
-        unordered_map<vector<int>, int, VectHash<int>> mstati_di_mat{};                 // Lista degli mStati della matrice
-        vector<int> charact{};                                  // Carattere degli mStati della matrice (1 inizio, 2 transiente, 3 ciclo limite)
-        vector<int> cluster{};                                  // Cluster degli mStati
-        vector<int> dist{};                                     // Distanza dal C.L. degli mStati
-        vector<int> nvic{};                                     // Numero di mStati che evolvono in un certo mStato
+        //unordered_map<vector<int>, int, VectHash<int>> statiVisitati{};                 // Lista degli visitati
+        int numStati = (1 << N);
+        map<int, int> statiVisitati;                 // Lista degli visitati
+        int charact[numStati];                                  // Carattere degli mStati della matrice (1 inizio, 2 transiente, 3 ciclo limite)
+        int cluster[numStati];                                  // Cluster degli mStati
+        int dist[numStati];                                     // Distanza dal C.L. degli mStati
+        int nvic[numStati];                                     // Numero di mStati che evolvono in un certo mStato
     
-        for (int n = 0; n < (1 << N); ++n) {                      // Ciclo sui 2^N stati iniziali
-           vector<int> stati10(1, n);                           // Lista degli stati singoli di una condiz iniziale, in base 10
+        for (int n = 0; n < numStati; ++n) {                      // Ciclo sui 2^N stati iniziali
+           int s0 = n;                           // Lista degli stati singoli di una condiz iniziale, in base 10
            //py::print("stati10",stati10[0]);
-           vector<int> mstato_k = mstato_da_n(stati10, m);      // Primo mStato
+           //vector<int> mstato_k = mstato_da_n(stati10, m);      // Primo mStato
            //py::list vec;
            //for (unsigned int i=0; i<m;++i) vec.append(mstato_k[i]);
            //py::print("vec",vec);
            
-           if (mstati_di_mat.find(mstato_k) != mstati_di_mat.end()) continue;  //  Controllo che uno stato come quello iniziale (ovvero [0,0...0, n]) non sia già comparso
+           if (statiVisitati.find(s0) != statiVisitati.end()) continue;  //  Controllo che uno stato come quello iniziale (ovvero [0,0...0, n]) non sia già comparso
 
-           mstati_di_mat[mstato_k] = mstati_di_mat.size();      // Aggiungo alla mappa il nuovo vettore e l'indice corrispondente (ovvero la lunghezza della mappa)
+           statiVisitati[s0] = n;      // Aggiungo alla mappa il nuovo vettore e l'indice corrispondente (ovvero la lunghezza della mappa)
            charact.push_back(1);
            nvic.push_back(0);
 
            int t = 0;                                                     // Contatore del tempo del processo
            array<int, N> s = s_da_n(n);                                   // Stato come vettore di attivazione dei neuroni
+           array<int, N> s1;
            //py::list vec;
            //for (unsigned int i=0; i<N;++i) vec.append(s[i]);
            //py::print("vec",vec);
-           array<int, N> refr_s{};                                        // Array che conta quanti tempi dura ancora il refr di un neurone
-           vector<array<double, N>> pot_memorizz(m, array<double, N>{});  // Lista dei potenziali degli m stati (stato attuale + m-1 precedenti)
-           pot_memorizz.back() = dot(mat, s);                             // Per lo stato iniziale assumo che gli stati precedenti fossero tutti 0. .back() mi da l'ultimo elemento
+           //array<int, N> refr_s{};                                        // Array che conta quanti tempi dura ancora il refr di un neurone
+           //array<double, N> attivazione;  // attivazione
+           //attivazione = dot(mat, s);                             // Per lo stato iniziale assumo che gli stati precedenti fossero tutti 0. .back() mi da l'ultimo elemento
            array<double, N> v;
            unsigned int indice, prima_comparsa, k;
 
            while (true) {
                t += 1;                                                    // Lo aggiorno subito perchè nello 0 dele liste già ho messo lo stato iniziale (quindi voglio che alla prima iterazione valga 1)
 
-              if (refr > 0) {
-                  for (int i = 0; i < N; ++i){
-                      if (refr_s[i] > 0) {                                    // Se il conto alla rovescia del suo periodo refrattario non è ancora a 0
-                          refr_s[i] -= 1;                                     // Aggiorno il conto alla rovescia
-                          pot_memorizz[m-1][i] = 0;                           // Azzero il suo ultimo potenziale (gli altri saranno già nulli per costduzione)
-                      } else if (s[i]==1){                                       // Se invece si è appena attivato, annullo le ultime m memorie
-                          for (int j = 0; j < m; ++j) {
-                              refr_s[i] = refr - 1;
-                              pot_memorizz[j][i] = 0;
-                          }
-                      }
-                  }
-              }
-               
-               v = dot_vec(pot_memorizz, f_k);
-               for (int i = 0; i < N; ++i) {
-                   s[i] = v[i] >= thresh;                                        // Theta di Heavyside per ogni elemento di v, che ci da s
-               }  
-
-               for (int i = 0; i < m-2; ++i) {                             // Levo dai pot. memorizzati il pot più vecchio e aggiungo il più nuovo 
-                   pot_memorizz[i] = pot_memorizz[i + 1];
+               v = dot(mat, s);
+               for (int i = 0; i < N; ++i){
+                   s1[i]=0;
                }
-               pot_memorizz[m-1] = dot(mat, s);
+               for (int i = 0; i < N; ++i) {
+                   s1[i] = (v[i] >= thresh);                                        // Theta di Heavyside per ogni elemento di v, che ci da 
+               }  
 
                k = n_da_s(s);                                              // Ricavo il valore decimale corrispondente allo stato
                //py::print(">k",k);
@@ -442,15 +414,18 @@ void ciclo_singola_matrice(double eps,
                //for (unsigned int i=0; i<N;++i) vec.append(s[i]);
                //py::print("vec",vec);
 
-               stati10.push_back(k);                                       // Aggiorno gli stati decimali  
-               mstato_k = mstato_da_n(stati10, m);                         // Ricavo il valore codificato del mStato    
+               statiVisitati[k]=n; //Aggiungi agli stati visitati
 
-               auto it_indice = mstati_di_mat.find(mstato_k);              //  Cerco se questo stato è già comparso per questa matrice; distance mi da la posizione, se lo trova, del valore. Altrimenti mi da la fine della mappa
-
+               if (statiVisitati.find(k) != statiVisitati.end()) {
+                  nvic[k]=1;
+                  charact[k]=2;   
+                  continue;             //  Cerco se questo stato è già comparso per questa matrice
+               } else {
+                  break;
+               }
+               
                if (it_indice == mstati_di_mat.end()) {                     // Ovvero se non è stato trovato: non è mai comparso. Lo aggiungo alle liste (vicini, carattere, mStati) 
-                  nvic.push_back(1);
-                  charact.push_back(2);
-                  mstati_di_mat[mstato_k] = mstati_di_mat.size();                  
+               
                } else if (cluster.size() <= (indice = it_indice->second)) {    // Ovvero se esiste in questo percorso. Controllo se l'indice di mStati_di_mat esiste anche in cluster
                   icluster += 1;
                   nvic[indice] += 1;
@@ -507,14 +482,14 @@ py::dict runRHNN(double eps, double dil,int ripetiz = 1000){
   //double eps = 0.0;
   //double dil = 0.0;
   py::print("N",N,"eps",eps, "dil",dil,"ripetiz",ripetiz);
-  int m = 1;
-  int refr = 0; 
+  //int m = 1;
+  //int refr = 0; 
   double thresh = 0.1;
-  double tau = 1.0;
-  vector<double> f_k = generate_f_k(m, tau);        // Vettore dei decadimenti
+  //double tau = 1.0;
+  //vector<double> f_k = generate_f_k(m, tau);        // Vettore dei decadimenti
   //int ripetiz = 1;
 
-  ciclo_singola_matrice(eps, dil, m, refr, thresh, f_k,
+  ciclo_singola_matrice(eps, dil, thresh,
                         &isto_dist, &isto_dmax, &isto_lung, &isto_size, &isto_nclu, &isto_nvic,
                         ripetiz, false, ptrNet);
 
@@ -570,14 +545,14 @@ py::dict runRHNNwithNets(double thresh, py::array_t<double> net){
   //double eps = 0.0;
   //double dil = 0.0;
   py::print("N",N,"thresh",thresh,"ripetiz",ripetiz);
-  int m = 1;
-  int refr = 0; 
-  //double thresh = 0.1;
-  double tau = 1.0;
-  vector<double> f_k = generate_f_k(m, tau);        // Vettore dei decadimenti
+  //int m = 1;
+  //int refr = 0; 
+  double thresh = 0.1;
+  //double tau = 1.0;
+  //vector<double> f_k = generate_f_k(m, tau);        // Vettore dei decadimenti
   //int ripetiz = 1;
 
-  ciclo_singola_matrice(0.0, 0.0, m, refr, thresh, f_k,
+  ciclo_singola_matrice(0.0, 0.0, thresh,
                         &isto_dist, &isto_dmax, &isto_lung, &isto_size, &isto_nclu, &isto_nvic,
                         ripetiz,true,ptrNet);
 
