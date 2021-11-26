@@ -539,9 +539,10 @@ py::dict runRHNNwithNets(double thresh, py::array_t<double> net){
   unsigned int Np = (unsigned int) bufNet.shape[2];
   unsigned int Npp = (unsigned int)  bufNet.shape[1];
   unsigned int ripetiz = (unsigned int) bufNet.shape[0];
-  py::print("N",Np);
-  py::print("Np",Npp);
-  assert (N==Np);
+  py::print("N",N);
+  py::print("Np",Np);
+  py::print("Npp",Npp);
+  assert (N==Np);  // change line 11 # define N 14
   assert (N==Npp);
   py::print("ripetiz",ripetiz);
 
