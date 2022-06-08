@@ -17,8 +17,10 @@ print(net.shape)
 nets = np.array([net.T])
 print(nets.shape)
 
-
+t1 = time.time()
 cycles = getCycles.getCyclesNX(net, net.shape[0], 0, 0)
+t2 = time.time()
+print('time pyton',t2-t1)
 print(cycles)
 
 
@@ -30,6 +32,7 @@ dictMes = hrnn.runRHNNwithNets(0.0,nets)
 t2 = time.time()
 print(dictMes)
 print(t2-t1)
+print('time cpp',t2-t1)
 
 print('cycles python',len(cycles[0]), 'cycles cpp',int(dictMes['NClu']))
 print('Test result ', len(cycles[0]) == int(dictMes['NClu']))

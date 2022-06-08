@@ -28,7 +28,7 @@
 
 #define HASH_MULT  314159    /* random multiplier */
 #define HASH_PRIME 516595003 /* the 27182818th prime; it's $\leq 2^{29}$ */
-#define N 5//14//5//14
+#define N 14//5//14
 
 
 using namespace std;
