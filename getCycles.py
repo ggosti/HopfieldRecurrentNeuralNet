@@ -347,7 +347,7 @@ if __name__ == "__main__":
             #print C
 
             cycles,allCycles = getCycles(C, N, typ, thr)
-            print('loops',cycles)
+            print('loops',allCycles)
 
             loops,G = getCyclesNX(C, N, typ, thr)
             print('loops', loops)
