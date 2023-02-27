@@ -188,6 +188,7 @@ def getCycles(C,N,typ,thr):
 
     allCycles = []
     cycles = {}
+    nodesInLCycles = {}
     curr_states = first_states
     for l in range(2**N): # find all cycle of increasing lenght l+1
         #print('---- Cycle length ',l,' -----')
@@ -197,29 +198,34 @@ def getCycles(C,N,typ,thr):
             cyclesLGate = (first_states_index == next_states_indexes)
             if np.sum(cyclesLGate)>0:
                 cycles[l]=[]
-            #print('first_states_index')
-            #print(first_states_index)
-            #print("cyclesLGate",cyclesLGate)
-            #print(first_states_index[cyclesLGate])
-            lCycles = list(first_states_index[cyclesLGate])
-            curr_states = next_states[np.logical_not(cyclesLGate)]
-            first_states_index = first_states_index[np.logical_not(cyclesLGate)]
-            while(len(lCycles)>0):
-                start = lCycles.pop()
-                #print('start',start)
-                start_vec = stateIndex2stateVec(start,N,typ)
-                cycle = [start]
-                for t in range(l):
-                    next_vec = transPy(start_vec,C, N, typ, thr)
-                    next = stateVec2stateIndex(next_vec,N,typ)
-                    #print('next',next)
-                    lCycles.remove(next)
-                    cycle.append(next)
-                    start_vec = next_vec
-                #print('cycle',cycle)
-                cycles[l].append(cycle)
-                allCycles.append(cycle)
-    return cycles,allCycles
+                #print('first_states_index')
+                #print(first_states_index)
+                #print("cyclesLGate",cyclesLGate)
+                #print(first_states_index[cyclesLGate])
+                #print(lCycles)
+                nodesInLCycles[l] = list(first_states_index[cyclesLGate])
+                #print(nodesInLCycles)
+                curr_states = next_states[np.logical_not(cyclesLGate)]
+                first_states_index = first_states_index[np.logical_not(cyclesLGate)]
+                #lCycles = list(first_states_index[cyclesLGate])
+            else:
+                curr_states = next_states 
+                #while(len(lCycles)>0):
+                #    start = lCycles.pop()
+                #    #print('start',start)
+                #    start_vec = stateIndex2stateVec(start,N,typ)
+                #    cycle = [start]
+                #    for t in range(l):
+                #        next_vec = transPy(start_vec,C, N, typ, thr)
+                #        next = stateVec2stateIndex(next_vec,N,typ)
+                #        #print('next',next)
+                #        lCycles.remove(next)
+                #        cycle.append(next)
+                #        start_vec = next_vec
+                #    #print('cycle',cycle)
+                #    cycles[l].append(cycle)
+                #    allCycles.append(cycle)
+    return cycles,allCycles,nodesInLCycles
 
 
 def getCyclesNX(C,N,typ,thr):
@@ -279,7 +285,8 @@ def test2():
     #      [0.745916366577148437500000E-0002, -0.261993408203125000000000E+0000, - 0.740401744842529296875000E-0001, 0.243728160858154296875000E+0000, 0.000000000000000000000000E+0000]]
     M1 = np.array(M1).T
     print(M1)
-    cycles,allCycles = getCycles(M1, N, typ, thr)
+    cycles,allCycles,nodesInLCycles = getCycles(M1, N, typ, thr)
+    print('nodesInLCycles',nodesInLCycles)
     print('allCycles',allCycles,len(allCycles))
 
     loops, G = getCyclesNX(M1, N, typ, thr)
@@ -309,7 +316,8 @@ def test3():
           [0.745916366577148437500000E-0002, -0.261993408203125000000000E+0000, - 0.740401744842529296875000E-0001, 0.243728160858154296875000E+0000, 0.000000000000000000000000E+0000]]
     M1 = np.array(M1).T
     print(M1)
-    cycles,allCycles = getCycles(M1, N, typ, thr)
+    cycles,allCycles,nodesInLCycles = getCycles(M1, N, typ, thr)
+    print('nodesInLCycles',nodesInLCycles)
     print('allCycles',allCycles,len(allCycles))
 
     loops, G = getCyclesNX(M1, N, typ, thr)
@@ -342,19 +350,15 @@ if __name__ == "__main__":
             #print 'seed',seed
             #C = get_connectivity_matrix(seed,N=N,rho=rho,epsilon=1.0)
             C = get_connectivity_matrix_fortranStyle(N=N,rho=rho,epsilon=1.0)
-            #print 'zeros',np.sum(C == 0),N + N*(N-1)*rho
-            #print 'C'
-            #print C
-
-            cycles,allCycles = getCycles(C, N, typ, thr)
-            print('loops',allCycles)
+            
+            #cycles,allCycles,nodesInLCycles = getCycles(C, N, typ, thr)
+            #print('nodesInLCycles',nodesInLCycles)
 
             loops,G = getCyclesNX(C, N, typ, thr)
             print('loops', loops)
             num = len(loops)
             #print num
             numLoops.append(num)
-
             if False:
 
                 pos = nx.layout.spring_layout(G)
