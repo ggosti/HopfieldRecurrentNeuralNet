@@ -69,14 +69,16 @@ def transPy(sigma_path0,net1,N,typ = 1, thr = 0):
     if not sigma_path0.dtype is np.dtype(np.float32):
         sigma_path0 = np.float32(sigma_path0)
     sigma_path1 = net1.dot(sigma_path0.T)
-    #print sigma_path1
+    #print(sigma_path1)
     sigma_path1 [sigma_path1  == 0] = 0.000001
-    #print sigma_path1
+    #print(sigma_path1)
     sigma_path1 = (1-typ+np.sign(sigma_path1 +thr))/(2-typ)
-    #print sigma_path1
+    #print(sigma_path1)
     return sigma_path1.T   
 
 ################################
+# Generate matrices util
+###############################3
 
 def symmetrizeOld(matrix):
     assert (matrix.shape[0] == matrix.shape[1])
@@ -341,7 +343,7 @@ if __name__ == "__main__":
     runNum = 10#1000
     seed = 8888#int(np.random.rand() * 10000)
     np.random.seed(seed)
-    rhos = [0.0]#[0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.8,0.85,0.9,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99]
+    rhos = [0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.8,0.85,0.9,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99] #[0.0]#[0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.8,0.85,0.9,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99]
 
     avCycles = []
     for rho in rhos:
