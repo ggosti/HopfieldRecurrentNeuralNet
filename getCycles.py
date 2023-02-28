@@ -337,7 +337,7 @@ if __name__ == "__main__":
     typ = 0 # typ = 0 neurons with binary activation states {0,1}, typ = 1  neurons with states {-1,1}.
             # typ=1 --> {-1,1}    typ=0 --> {0,1} 
     thr = 0
-    runNum = 10#1000
+    runNum = 1000#1000
     seed = 8888#int(np.random.rand() * 10000)
     np.random.seed(seed)
     rhos = [0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.8,0.85,0.9,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99] #[0.0]#[0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.8,0.85,0.9,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99]
@@ -355,7 +355,7 @@ if __name__ == "__main__":
             #print('nodesInLCycles',nodesInLCycles)
 
             loops,G = getCyclesNX(C, N, typ, thr)
-            print('loops', loops)
+            # print('loops', loops)
             num = len(loops)
             #print num
             numLoops.append(num)
