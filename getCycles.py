@@ -28,7 +28,7 @@ def stateVec2stateIndex(sigma,N,typ = 1):
     k=int(0)
     for i in range(0,N):
         k=k+(sigma[i]+typ)/(1+typ)*2**(N-i-1)   # typ=1 --> [-1,1]    typ=0 --> [0,1]
-    return k
+    return int(k)
 
 def stateIndex2stateVecSeq(ms,N,typ = 1):
     """
@@ -181,59 +181,41 @@ def get_connectivity_matrix_fortranStyle(N,rho,epsilon):
     return Matrice
 
 def getCycles(C,N,typ,thr):
-    all_states = lrnn.stateIndex2stateVecSeq(range(np.power(2,N)), N, typ)
-    #print all_states
-    #print len(all_states)
-    #print 2**N
+    first_states_index = np.array((range(2**N)))
+    #print('first_states_index')
+    #print(first_states_index)
+    first_states = stateIndex2stateVecSeq(first_states_index, N, typ)
 
     allCycles = []
     cycles = {}
-    for l in range(1,1+2**N):
-        cycles[l] = []
-
-    first_state = range(0,2**N)
-    curr_state = all_states
-    for l in range(1,1+2**N):
-        # print '---- Cycle length ',l,' -----'
-        if len(curr_state) > 0:
-            next_states = lrnn.transPy(curr_state,
-                                        C, N, typ, thr)
-            curr_state_temp = []
-            first_state_temp = []
-            curr_state_temp_index = []
-            for f,s1,s2 in zip(first_state,curr_state,next_states):
-                k1 = int(lrnn.stateVec2stateIndex(s1, N, typ))
-                k2 = int(lrnn.stateVec2stateIndex(s2, N, typ))
-                # print f,': ',k1,'->',k2
-                if f == k2:
-                    #print 'Cycle len ',l
-                    #print f
-                    #print k2
-                    cycles[l].append(f)
-                    allCycles.append(f)
-                else:
-                    #print k2,curr_state_temp_index
-                    #k2 = lrnn.stateVec2stateIndex(s2,N,0)
-                    #if k2 not in curr_state_temp_index:
-                    curr_state_temp_index.append(k2)
-                    curr_state_temp.append(s2)
-                    first_state_temp.append(f)
-            #print 'start_cycle'
-            #print np.array(start_cycle)
-            #print len(start_cycle)
-            curr_state = []
-            first_state = []
-            for f,s,k in zip(first_state_temp,curr_state_temp,curr_state_temp_index):
-                #k = lrnn.stateVec2stateIndex(s,N,typ)
-                #print f,'->',k
-                if k not in allCycles:
-                    curr_state.append(s)
-                    first_state.append(f)
-            curr_state = np.array(curr_state)
-            #print 'start_cycle 2'
-            #print np.array(start_cycle)
-            #print len(start_cycle)
-    return cycles
+    nodesInLCycles = {}
+    curr_states = first_states
+    for l in range(2**N): # find all cycle of increasing lenght l+1
+        #print('---- Cycle length ',l,' -----')
+        curr_states = transPy(curr_states,C, N, typ, thr)
+        
+    curr_states_index = stateVec2stateIndexSeq(curr_states, N, typ)
+    attractorStates = np.unique(curr_states_index).tolist()
+    #print('attractorStates',attractorStates)
+        
+    while len(attractorStates) > 0:
+        start = attractorStates.pop()
+        #print('start',start)
+        start_vec = stateIndex2stateVec(start,N,typ)
+        cycle = [start]
+        next_vec = transPy(start_vec,C, N, typ, thr)
+        next = stateVec2stateIndex(next_vec,N,typ)
+        while next in attractorStates:
+            #print('next',next)
+            attractorStates.remove(next)
+            cycle.append(next)
+            start_vec = next_vec
+            next_vec = transPy(start_vec,C, N, typ, thr)
+            next = stateVec2stateIndex(next_vec,N,typ)
+        #print('cycle',cycle)
+        #cycles[l].append(cycle)
+        allCycles.append(cycle)
+    return cycles,allCycles,attractorStates
 
 
 def getCyclesNX(C,N,typ,thr):
@@ -267,10 +249,10 @@ def test():
     m = np.random.rand(N, N)
     m1 = symmetrizeOld(m)
     m2 = symmetrize(m)
-    print (m1 == m2).all()
+    print ((m1 == m2).all())
     a1 = antisymmetrizeOld(m)
     a2 = antisymmetrize(m)
-    print (a1 == a2).all()
+    print ((a1 == a2).all())
 
 def test2():
     N = 5
@@ -293,8 +275,9 @@ def test2():
     #      [0.745916366577148437500000E-0002, -0.261993408203125000000000E+0000, - 0.740401744842529296875000E-0001, 0.243728160858154296875000E+0000, 0.000000000000000000000000E+0000]]
     M1 = np.array(M1).T
     print(M1)
-    cycles = getCycles(M1, N, typ, thr)
-    print(cycles)
+    cycles,allCycles,nodesInLCycles = getCycles(M1, N, typ, thr)
+    print('nodesInLCycles',nodesInLCycles)
+    print('allCycles',allCycles,len(allCycles))
 
     loops, G = getCyclesNX(M1, N, typ, thr)
     print('loops', loops)
@@ -323,8 +306,9 @@ def test3():
           [0.745916366577148437500000E-0002, -0.261993408203125000000000E+0000, - 0.740401744842529296875000E-0001, 0.243728160858154296875000E+0000, 0.000000000000000000000000E+0000]]
     M1 = np.array(M1).T
     print(M1)
-    cycles = getCycles(M1, N, typ, thr)
-    print(cycles)
+    cycles,allCycles,nodesInLCycles = getCycles(M1, N, typ, thr)
+    print('nodesInLCycles',nodesInLCycles)
+    print('allCycles',allCycles,len(allCycles))
 
     loops, G = getCyclesNX(M1, N, typ, thr)
     print('loops', loops)
@@ -333,10 +317,13 @@ def test3():
     print('test',num == 1)
 
 if __name__ == "__main__":
-    #test()
-    #test2()
-    #test3()
-    N = 14
+    print("do tests")
+    test()
+    test2()
+    test3()
+    print("end tests")
+
+    N = 10
     typ = 0 # typ = 0 neurons with binary activation states {0,1}, typ = 1  neurons with states {-1,1}.
             # typ=1 --> {-1,1}    typ=0 --> {0,1} 
     thr = 0
@@ -353,19 +340,15 @@ if __name__ == "__main__":
             #print 'seed',seed
             #C = get_connectivity_matrix(seed,N=N,rho=rho,epsilon=1.0)
             C = get_connectivity_matrix_fortranStyle(N=N,rho=rho,epsilon=1.0)
-            #print 'zeros',np.sum(C == 0),N + N*(N-1)*rho
-            #print 'C'
-            #print C
-
-            #cycles = getCycles(C, N, typ, thr)
-            #print cycles
+            
+            cycles,allCycles,nodesInLCycles = getCycles(C, N, typ, thr)
+            print('allCycles',allCycles)
 
             loops,G = getCyclesNX(C, N, typ, thr)
             print('loops', loops)
             num = len(loops)
             #print num
             numLoops.append(num)
-
             if False:
 
                 pos = nx.layout.spring_layout(G)
